@@ -20,7 +20,7 @@
     "A convenience for single index lookups: the first index
      found (or an implementation default) will be used. 
      Yields a set of all main map keys from reverse lookup keys rkeys")
-  (lookup-all [this v ixr-k fmt] [this v ixr-k] [this v] 
+  (lookup-all [this ixr-k v fmt] [this ixr-k v] [this v] 
     "Yields a set of all main map keys produced by (ixr-fn v) in lookup 
      index ixr-k. If using the 2-arity the first found index and ix-fn
      will be used.") 
@@ -51,11 +51,11 @@
   (lookup [this rkeys]
           (.lookup this rkeys qformat))
 
-  (lookup-all [this v ixr-k fmt]
+  (lookup-all [this ixr-k v fmt]
               (let [rkeys ((ixr-k (.indexers this)) v)]
                 (query this ixr-k rkeys fmt)))
 
-  (lookup-all [this v ixr-k]
+  (lookup-all [this ixr-k v]
               (lookup-all this v ixr-k qformat))
       
   (lookup-all [this v]
