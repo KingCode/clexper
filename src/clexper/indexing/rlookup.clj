@@ -36,8 +36,10 @@
 ;; with the following fields:
 ;; main: a regular clojure map, on which lookups are based
 ;; lookup: the lookups keyed by indexer keys
-;; indexers: a map of indexer keys to functions, each a 2-arity
-;;           function taking a map key, value resp.
+;; indexers: a map of indexer keys to functions, each a function
+;;           with 1- and 2-arities. 2-arity is invoked on each entry
+;;           at indexing/creation time, and 1-arity used for generating
+;;           all reverse lookup keys for a value at query time
 ;; qformat: the default IReverseLookup format, must be one of
 ;;         :aggregate, :map or :seq.
 
