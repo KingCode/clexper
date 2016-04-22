@@ -7,7 +7,9 @@
 
 (deftest single-index-test
   (let [m {:foo {:a 1, :b 2}, :bar {:a 2, :c 4}, :baz {:b 3, :c 5}}
-        ixr (fn [k v] (->> (set (keys v))))
+        ixr (fn f 
+              ([_ v] (->> (set (keys v))))
+              ([v] (f nil v)))
         imap (make-imap m {:default  ixr})]
     (is (= m (.main imap)))
     (is (= {:default {:a #{:foo :bar}

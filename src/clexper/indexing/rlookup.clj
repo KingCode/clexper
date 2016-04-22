@@ -18,8 +18,8 @@
   "
   (lookup [this rkeys fmt] [this rkeys]
     "A convenience for single index lookups: the first index
-     found will be used. Yields a set of all main map keys 
-     from reverse lookup keys rkeys")
+     found (or an implementation default) will be used. 
+     Yields a set of all main map keys from reverse lookup keys rkeys")
   (lookup-all [this v ixr-k fmt] [this v ixr-k] [this v] 
     "Yields a set of all main map keys produced by (ixr-fn v) in lookup 
      index ixr-k. If using the 2-arity the first found index and ix-fn
@@ -49,16 +49,16 @@
   (lookup [this rkeys]
           (.lookup this rkeys qformat))
 
-  (lookup-all [this [k v] ixr-k fmt]
-              (let [rkeys ((ixr-k (.indexers this)) k v)]
+  (lookup-all [this v ixr-k fmt]
+              (let [rkeys ((ixr-k (.indexers this)) v)]
                 (query this ixr-k rkeys fmt)))
 
-  (lookup-all [this kv ixr-k]
-              (lookup-all this kv ixr-k qformat))
+  (lookup-all [this v ixr-k]
+              (lookup-all this v ixr-k qformat))
       
-  (lookup-all [this [k v]]
+  (lookup-all [this v]
               (let [[_ [ixr-k ixr]] (ixrs&default this)
-                    rkeys (ixr k v)]
+                    rkeys (ixr v)]
                 (query this ixr-k rkeys)))
 
   (lookup-by [this ixr-k ks fmt] 
@@ -106,8 +106,12 @@
   (valAt [_ k]
     (.valAt main k))
   (valAt [_ k not-found]
-    (.valAt main k not-found)))
-  
+    (.valAt main k not-found))
+
+  clojure.lang.IFn
+  (invoke [_ k] (main k))
+  (invoke [_ k not-found] (main k not-found)))
+
 
 (defn add-lu-entries 
 " Adds lookup entries to a reverse lookup. For each entry [rk rv]
@@ -249,7 +253,8 @@
                   (op (.lookup imap) 
                       (seq (.indexers imap)) 
                       k v)
-                  (.indexers imap))))
+                  (.indexers imap)
+                  (.qformat imap))))
 
 (defn ixrs&default [imap]
   (->> (.indexers imap)
