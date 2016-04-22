@@ -38,7 +38,7 @@
             (is (= lu-1-expected lu-1-actual)))
 
 
-        ))
+        )) ))
     
 
     ;; phonebook indexing fns
@@ -75,7 +75,7 @@
          :by-address&phone address&phone
          :by-name&phone name&phone
          :by-name&address&phone name&address&phone
-         :default phone}))))
+         :default phone}))
 
 (def phonebook  {1 {:name "Fred", 
                     :sin 11        ;; used mnemonics:
