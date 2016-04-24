@@ -3,8 +3,6 @@
   (:require [clexper.indexing.rlookup :refer [IReverseLookup make-imap] :as sut]
             [clojure.test :refer :all]))
 
-
-
 (deftest single-index-test
   (let [m {:foo {:a 1, :b 2}, :bar {:a 2, :c 4}, :baz {:b 3, :c 5}}
         ixr (fn f 
@@ -30,15 +28,19 @@
        [:b :c] :seq '(#{:foo :baz} #{:bar :baz}), [:a :c] #{:foo :bar :baz}))
     
 
-    #_(testing  "arities of query 'lookup-all on IndexedMap"
-      (are [lu-3-keys lu-2-fmt lu-2-expected, lu-1-keys lu-1-expected]
-          (let [lu-2-actual (.lookup-all imap lu-2-keys lu-2-fmt)
-                lu-1-actual (.lookup imap lu-1-keys)]
+    (testing  "arities of query 'lookup-all on IndexedMap"
+      (are [lu-3-ixk lu-3-v lu-3-fmt lu-3-expected, 
+            lu-2-ixk lu-2-v lu-2-expected,
+            lu-1-v lu-1-expected]
+          (let [lu-3-actual (lookup-all imap lu-3-ixk lu-3-v lu-3-fmt)
+                lu-2-actual (lookup-all imap lu-2-ixk lu-2-v)
+                lu-1-actual (lookup-all imap lu-1-v)]
+            #_(is (= lu-3-expected lu-3-actual))
             (is (= lu-2-expected lu-2-actual))
             (is (= lu-1-expected lu-1-actual)))
-
-        
-        )) ))
+        :default {:a 1, :b 2} :map {:a #{:foo :bar} :b #{:foo :baz}},
+        :default {:a 30, :bob "whatever" :etc nil :c nil} #{:foo :bar :baz}, 
+        {:b 3 :c 5} #{:foo :bar :baz}))))
     
 
     ;; phonebook indexing fns
@@ -78,8 +80,8 @@
          :default phone}))
 
 (def phonebook  {1 {:name "Fred", 
-                    :sin 11        ;; used mnemonics:
-                    :address "f&m-a" ;; Fred and Mary Street Address
+                    :sin 11              ;; mnemonics:
+                    :address "f&m-a"     ;; Fred and Mary Street Address
                     :phone "f&m-p1122"}  ;; Fred and Mary 
                  2 {:name "Mary" 
                     :sin 22
@@ -94,9 +96,9 @@
                     :address "bsa"
                     :phone "bp44"}
                  5 {:name "Alice"    ;; Alice is the daughther of 
-                    :sin 55          ;;  Fred & Mary
-                    :address "f&m-a" 
-                    :phone "ap55"};; but has her own phone line
+                    :sin 55          ;;  Fred & Mary,
+                    :address "f&m-a" ;; still lives at home...
+                    :phone "ap55"}   ;; but has her own phone line
                  })
 
 (deftest multiple-index-test
