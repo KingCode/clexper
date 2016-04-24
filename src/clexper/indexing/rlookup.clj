@@ -1,6 +1,7 @@
 (ns clexper.indexing.rlookup
   (:require [clojure.set :as set])
-  (:import clojure.lang.IPersistentMap))
+  (:import clojure.lang.IPersistentMap)
+  #_(:import [clexper.indexing.rlookup IReverseLookup IndexedMap]))
   
 
 (defprotocol IReverseLookup
@@ -30,89 +31,88 @@
 
 (declare query update-imap ixrs&default)
 
-(deftype IndexedMap [main lookup indexers qformat]
+(deftype IndexedMap [m lu indexers qformat]
 
 ;; A map with (count indexers) number of reverse lookups
 ;; with the following fields:
-;; main: a regular clojure map, on which lookups are based
-;; lookup: the lookups keyed by indexer keys
+;; m: a regular clojure map, on which lookups are based
+;; lu: the lookups keyed by indexer keys
 ;; indexers: a map of indexer keys to functions, each a function
 ;;           with 1- and 2-arities. 2-arity is invoked on each entry
 ;;           at indexing/creation time, and 1-arity used for generating
 ;;           all reverse lookup keys for a value at query time
-;; qformat: the default IReverseLookup format, must be one of
-;;         :aggregate, :map or :seq.
+;; qformat: the default IReverseLookup result (query) format, 
+;;          must be one of:aggregate, :map or :seq.
 
   IReverseLookup
   (lookup [this rkeys fmt]
-          (let [[_ [ixr-k _]] (ixrs&default this)]
-            (query this ixr-k rkeys fmt)))
+    (let [[_ [ixr-k _]] (ixrs&default this)]
+      (query this ixr-k rkeys fmt)))
       
   (lookup [this rkeys]
-          (.lookup this rkeys qformat))
-
+    (.lookup this rkeys qformat))
+  
   (lookup-all [this ixr-k v fmt]
-              (let [rkeys ((ixr-k (.indexers this)) v)]
-                (query this ixr-k rkeys fmt)))
+    (let [rkeys ((ixr-k (.indexers this)) v)]
+      (query this ixr-k rkeys fmt)))
 
   (lookup-all [this ixr-k v]
-              (lookup-all this v ixr-k qformat))
+    (.lookup-all this ixr-k v qformat))
       
   (lookup-all [this v]
-              (let [[_ [ixr-k ixr]] (ixrs&default this)
-                    rkeys (ixr v)]
-                (query this ixr-k rkeys)))
+    (let [[_ [ixr-k _]] (ixrs&default this)]
+      (.lookup-all this ixr-k v)))
 
   (lookup-by [this ixr-k ks fmt] 
-             (query this ixr-k ks fmt))
-
+    (query this ixr-k ks fmt))
+  
   (lookup-by [this ixr-k ks] 
-             (query this ixr-k ks))
+    (query this ixr-k ks))
 
    IPersistentMap
   (assoc [this k v]
-    (update-imap this (.assoc main k v) k v))
+    (update-imap this (.assoc m k v) k v))
   (assocEx [this k v] 
-    (update-imap this (.assocEx main k v) k v))
+    (update-imap this (.assocEx m k v) k v))
   
   (without [this k] 
-    (update-imap this (.without main k) k))
+    (update-imap this (.without m k) k))
 
-  ;; boilerplate delegation to main-map
+  ;; boilerplate delegation to the main map
   java.lang.Iterable
   (iterator [this]
-    (.iterator main))
+    (.iterator m))
 
   clojure.lang.Associative
   (containsKey [_ k]
-    (.containsKey main k))
+    (.containsKey m k))
   (entryAt [_ k]
-    (.entryAt main k))
+    (.entryAt m k))
 
   clojure.lang.IPersistentCollection
   (count [_]
-    (.count main)) 
+    (.count m)) 
   (cons [_ o]
-    (.cons main o))
+    (.cons m o))
   (empty [_]
-    (.empty main))
+    (.empty m))
   (equiv [this o]
     (and (isa? (class o) IndexedMap)
          (.equiv o this)))
 
   clojure.lang.Seqable
   (seq [_]
-    (.seq main))
+    (.seq m))
 
   clojure.lang.ILookup
   (valAt [_ k]
-    (.valAt main k))
+    (.valAt m k))
   (valAt [_ k not-found]
-    (.valAt main k not-found))
+    (.valAt m k not-found))
 
   clojure.lang.IFn
-  (invoke [_ k] (main k))
-  (invoke [_ k not-found] (main k not-found)))
+  (invoke [_ k] (m k))
+  (invoke [_ k not-found] (m k not-found)))
 
 
 (defn add-lu-entries 
@@ -252,7 +252,7 @@
              add-map-entry 
              remove-map-entry)]
     (->IndexedMap m
-                  (op (.lookup imap) 
+                  (op (.lu imap) 
                       (seq (.indexers imap)) 
                       k v)
                   (.indexers imap)
@@ -263,7 +263,7 @@
        ((fn [ixrs] [ixrs (first ixrs)]))))
 
 (defn query-as-seq [imap ixr-k rkeys]
-  (map #(get-in (.lookup imap)
+  (map #(get-in (.lu imap)
                      [ixr-k %]) 
             rkeys))
 

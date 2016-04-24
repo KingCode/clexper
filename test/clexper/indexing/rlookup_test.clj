@@ -1,6 +1,6 @@
 (ns clexper.indexing.rlookup-test
-  #_(:import [clexper.indexing.rlookup IndexedMap])
-  (:require [clexper.indexing.rlookup :refer [make-imap] :as sut]
+  (:import (clexper.indexing.rlookup IndexedMap))
+  (:require [clexper.indexing.rlookup :refer [IReverseLookup make-imap] :as sut]
             [clojure.test :refer :all]))
 
 
@@ -12,16 +12,16 @@
               ([v] (f nil v)))
         imap (make-imap m {:default  ixr})]
     (testing "imap creation and fields"
-      (is (= m (.main imap)))
+      (is (= m (.m imap)))
       (is (= {:default {:a #{:foo :bar}
                         :b #{:foo :baz}
                         :c #{:bar :baz}}} 
-             (.lookup imap))))
+             (.lu imap))))
     
     (testing  "arities of query method 'lookup on IndexedMap"
       (are [lu-2-keys lu-2-fmt lu-2-expected, lu-1-keys lu-1-expected]
-          (let [lu-2-actual (.lookup imap lu-2-keys lu-2-fmt)
-                lu-1-actual (.lookup imap lu-1-keys)]
+          (let [lu-2-actual (lookup imap lu-2-keys lu-2-fmt)
+                lu-1-actual (lookup imap lu-1-keys)]
             (is (= lu-2-expected lu-2-actual))
             (is (= lu-1-expected lu-1-actual)))
        [:a] :map {:a #{:foo :bar}}, [:a] #{:foo :bar}
@@ -37,7 +37,7 @@
             (is (= lu-2-expected lu-2-actual))
             (is (= lu-1-expected lu-1-actual)))
 
-
+        
         )) ))
     
 
@@ -56,16 +56,16 @@
                 ([_ v] #{(:sin v)})
                 ([v] (sin nil v)))
               (name&address 
-                ([_ v] [(name v) (address v)])
+                ([_ v] #{[(name v) (address v)]})
                 ([v] (name&address v)))
               (address&phone
-                ([_ v] [(address v) (phone v)])
+                ([_ v] #{[(address v) (phone v)]})
                 ([v] (address&phone v)))
               (name&phone
-                ([_ v] [(name v) (phone v)])
+                ([_ v] #{[(name v) (phone v)]})
                 ([v] (name&phone v)))
               (name&address&phone
-                ([_ v] [(name v) (address v) (phone v)])
+                ([_ v] #{[(name v) (address v) (phone v)]})
                 ([v] (name&address&phone v)))]
         {:by-name name
          :by-address address
@@ -84,7 +84,7 @@
                  2 {:name "Mary" 
                     :sin 22
                     :address "f&m-a"
-                    :phone "f&m1122"}
+                    :phone "f&m-p1122"}
                  3 {:name "Pat" 
                     :sin 33
                     :address "psa"
