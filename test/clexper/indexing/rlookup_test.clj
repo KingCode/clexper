@@ -56,17 +56,17 @@
                 ([_ v] #{(:sin v)})
                 ([v] (sin nil v)))
               (name&address 
-                ([_ v] #{[(name v) (address v)]})
-                ([v] (name&address v)))
+                ([_ v] #{[(:name v) (:address v)]})
+                ([v] (name&address nil v)))
               (address&phone
-                ([_ v] #{[(address v) (phone v)]})
-                ([v] (address&phone v)))
+                ([_ v] #{[(:address v) (:phone v)]})
+                ([v] (address&phone nil v)))
               (name&phone
-                ([_ v] #{[(name v) (phone v)]})
-                ([v] (name&phone v)))
+                ([_ v] #{[(:name v) (:phone v)]})
+                ([v] (name&phone nil v)))
               (name&address&phone
-                ([_ v] #{[(name v) (address v) (phone v)]})
-                ([v] (name&address&phone v)))]
+                ([_ v] #{[(:name v) (:address v) (:phone v)]})
+                ([v] (name&address&phone nil v)))]
         {:by-name name
          :by-address address
          :by-phone phone

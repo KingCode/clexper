@@ -260,7 +260,9 @@
 
 (defn ixrs&default [imap]
   (->> (.indexers imap)
-       ((fn [ixrs] [ixrs (first ixrs)]))))
+       ((fn [ixrs] [ixrs, (if-let [default-ixr (:default ixrs)]
+                            [:default default-ixr]
+                              (first ixrs))]))))
 
 (defn query-as-seq [imap ixr-k rkeys]
   (map #(get-in (.lu imap)
