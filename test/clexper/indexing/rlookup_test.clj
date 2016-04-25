@@ -35,22 +35,22 @@
           (let [lu-3-actual (lookup-all imap lu-3-ixk lu-3-v lu-3-fmt)
                 lu-2-actual (lookup-all imap lu-2-ixk lu-2-v)
                 lu-1-actual (lookup-all imap lu-1-v)]
-            #_(is (= lu-3-expected lu-3-actual))
+            (is (= lu-3-expected lu-3-actual))
             (is (= lu-2-expected lu-2-actual))
             (is (= lu-1-expected lu-1-actual)))
         :default {:a 1, :b 2} :map {:a #{:foo :bar} :b #{:foo :baz}},
         :default {:a 30, :bob "whatever" :etc nil :c nil} #{:foo :bar :baz}, 
         {:b 3 :c 5} #{:foo :bar :baz}))
     
-    #_(testing "arities of query 'look-by on IndexedMap"
+    (testing "arities of query 'lookup-by on IndexedMap"
       (are [lu-3-ixk lu-3-keys lu-3-fmt lu-3-expected,
             lu-2-ixk lu-2-keys lu-2-expected]
           (let [lu-3-actual (lookup-by imap lu-3-ixk lu-3-keys lu-3-fmt)
                 lu-2-actual (lookup-by imap lu-2-ixk lu-2-keys)]
             (is (= lu-3-expected lu-3-actual))
-            (is (= lu-2-expected lu-2-actual))))
-      
-)))
+            (is (= lu-2-expected lu-2-actual)))
+       :default [:a :c] :seq '(#{:foo :bar} #{:bar :baz}),
+       :default [:b :a] #{:foo :bar :baz}))))
     
 
     ;; phonebook indexing fns
@@ -111,7 +111,7 @@
                     :phone "ap55"}   ;; but has her own phone line
                  })
 
-(deftest multiple-index-test
+#_(deftest multiple-index-test
   (let [imap (make-imap phonebook phone-ixrs)])
 
 )
