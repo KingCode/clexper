@@ -1,6 +1,9 @@
 (ns clexper.indexing.rlookup-test
-  (:import (clexper.indexing.rlookup IndexedMap))
-  (:require [clexper.indexing.rlookup :refer [IReverseLookup make-imap] :as sut]
+  #_(:import (clexper.indexing.rlookup IndexedMap))
+  (:require [clexper.indexing.rlookup 
+             :refer [;;IReverseLookup 
+                     lookup lookup-all lookup-by
+                     make-imap] :as sut]
             [clojure.test :refer :all]))
 
 (deftest single-index-test
@@ -117,6 +120,6 @@
     )
   
 
-)
+))
     
 
