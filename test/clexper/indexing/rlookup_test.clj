@@ -1,8 +1,6 @@
 (ns clexper.indexing.rlookup-test
-  #_(:import (clexper.indexing.rlookup IndexedMap))
   (:require [clexper.indexing.rlookup 
-             :refer [;;IReverseLookup 
-                     lookup lookup-all lookup-by
+             :refer [lookup lookup-all lookup-by
                      make-imap] :as sut]
             [clojure.test :refer :all]))
 
@@ -90,36 +88,63 @@
          :by-address&phone address&phone
          :by-name&phone name&phone
          :by-name&address&phone name&address&phone
-         :default phone}))
+         :default :phone}))
 
-(def phonebook  {1 {:name "Fred", 
-                    :sin 11              ;; mnemonics:
-                    :address "f&m-a"     ;; Fred and Mary Street Address
-                    :phone "f&m-p1122"}  ;; Fred and Mary 
+(def phonebook  {1 {:name "Fred",        ;; *** Mnemonics: ***
+                    :sin 11              ;; reflects key
+                    :address "f&m-a"     ;; Fred & Mary's street Address
+                    :phone "111-2222"}   ;; made of of sins digits
                  2 {:name "Mary" 
                     :sin 22
                     :address "f&m-a"
-                    :phone "f&m-p1122"}
+                    :phone "111-2222"}
                  3 {:name "Pat" 
                     :sin 33
                     :address "psa"
-                    :phone "pp33"}
+                    :phone "333-3333"}
                  4 {:name "Bobby"
                     :sin 44
                     :address "bsa"
-                    :phone "bp44"}
+                    :phone "444-4444"}
                  5 {:name "Alice"    ;; Alice is the daughther of 
                     :sin 55          ;;  Fred & Mary,
                     :address "f&m-a" ;; still lives at home...
-                    :phone "ap55"}   ;; but has her own phone line
+                    :phone "555-5555"}   ;; but has her own phone line
                  })
 
-#_(deftest multiple-index-test
-  (let [imap (make-imap phonebook phone-ixrs)]
-    (is (= phonebook (.m imap))
-    )
-  
+(defmacro run-test 
+  ([f imap ixrk ks fmt expected msg]
+   `(is (= ~expected (~f ~imap ~ixrk ~ks ~fmt)) ~msg))
+  ([f imap ixrk ks expected msg]
+   `(is (= ~expected (~f ~imap ~ixrk ~ks)) ~msg))
+  ([f imap v-or-k expected msg]
+   `(is (= ~expected (~f ~imap ~v-or-k)) ~msg)))
 
-))
-    
+(deftest multiple-index-test
+  (let [pbdir (make-imap phonebook phone-ixrs)]
+    (is (= phonebook (.m pbdir)))
+    (testing "'lookup-by for single-keyed reverse lookups"
+      (are [lu-3-ixrk lu-3-ks lu-3-fmt lu-3-expected,
+            lu-2-ixrk lu-2-ks lu-2-expected]
+          (let [lu-3-actual (lookup-by pbdir lu-3-ixrk lu-3-ks lu-3-fmt)
+                lu-2-actual (lookup-by pbdir lu-2-ixrk lu-2-ks)]
+            (is (= lu-3-expected lu-3-actual))
+            (is (= lu-2-expected lu-2-actual)))
+          #_(do 
+            (run-test lookup-by pbdir lu-3-ixrk lu-3-ks lu-3-fmt lu-3-expected "lu-3-actual")
+            (run-test lookup-by pbdir lu-2-ixrk lu-2-ks lu-2-expected "lu-2-actual"))
+          :by-name ["Fred"] :map {"Fred" #{1}}
+          :by-name ["Fred"] #{1},
+          
+          :by-address ["f&m-a" "bsa"] :seq '(#{1 2 5} #{4})
+          :by-address ["f&m-a" "bsa"] #{1 2 4 5}))
 
+    (testing "'lookup-by for multi-keyed reverse lookups"
+      (are [lu-3-ixrk lu-3-ks lu-3-fmt lu-3-expected]
+          (let [lu-3-actual (lookup-by pbdir lu-3-ixrk lu-3-ks lu-3-fmt)]
+            (is (= lu-3-expected lu-3-actual)))
+        :by-name&address [["Fred" "f&m-a"] ["Pat" "psa"]] :map {["Fred" "f&m-a"] #{1}
+                                                                ["Pat" "psa"] #{3}},
+        :by-address&phone [["f&m-a" "111-2222"]] :aggregate #{1 2},
+        :by-name&address&phone [["Bobby" "bsa" "444-4444"] ["Pat" "psa" "333-3333"]] :seq
+         '(#{4} #{3})))))

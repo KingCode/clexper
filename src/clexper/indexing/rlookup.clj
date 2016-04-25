@@ -1,7 +1,5 @@
 (ns clexper.indexing.rlookup
-  (:require [clojure.set :as set])
-  (:import clojure.lang.IPersistentMap)
-  #_(:import [clexper.indexing.rlookup IReverseLookup IndexedMap]))
+  (:require [clojure.set :as set]))
   
 
 (defprotocol IReverseLookup
@@ -23,8 +21,8 @@
      Yields a set of all main map keys from reverse lookup keys rkeys")
   (lookup-all [this ixr-k v fmt] [this ixr-k v] [this v] 
     "Yields a set of all main map keys produced by (ixr-fn v) in lookup 
-     index ixr-k. If using the 2-arity the first found index and ix-fn
-     will be used.") 
+     index ixr-k using format fmt if provided; implementation  defaults 
+     for ixr-k and fmt are used otherwise.") 
   (lookup-by [this ixr-k ks fmt][this ixr-k ks] 
     "Yields a set of all main map keys from lookup keys ks 
      for index keyed under ixr-k."))
@@ -69,7 +67,7 @@
   (lookup-by [this ixr-k ks] 
     (query this ixr-k ks))
 
-   IPersistentMap
+   clojure.lang.IPersistentMap
   (assoc [this k v]
     (update-imap this (.assoc m k v) k v))
   (assocEx [this k v] 
