@@ -112,7 +112,10 @@
                  })
 
 #_(deftest multiple-index-test
-  (let [imap (make-imap phonebook phone-ixrs)])
+  (let [imap (make-imap phonebook phone-ixrs)]
+    (is (= phonebook (.m imap))
+    )
+  
 
 )
     

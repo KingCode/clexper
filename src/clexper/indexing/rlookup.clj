@@ -184,25 +184,27 @@
 [lu indexers k v & [old-val]]
   (loop [lu lu [& [[ixr-k ixr-fn] & rest-ixr]] indexers]
 
-   (if-not ixr-k
-     lu
-     (let [lu (if old-val
-                ;; remove k from reverse lookup values' elements 
-                ;; if new look-up keys don't require it.
-                (let [depleted-lu-keys (depleted-keys ixr-k 
-                                                      ixr-fn k 
-                                                      v 
-                                                      old-val)]
-                  (deplete-lu-for-entry lu 
-                                        ixr-k 
-                                        k 
-                                        depleted-lu-keys))
-                ;; no removal needed
-                lu)]
-       (recur (add-lu-entries lu 
-                              ixr-k 
-                              (make-lu-entries (ixr-fn k v) k))
-              rest-ixr)))))
+   (cond (not ixr-k) lu
+
+         (not (fn? ixr-fn)) (recur lu rest-ixr)
+         
+         :else (let [lu (if old-val
+                  ;; remove k from reverse lookup values' elements 
+                  ;; if new look-up keys don't require it.
+                          (let [depleted-lu-keys (depleted-keys ixr-k 
+                                                                ixr-fn k 
+                                                                v 
+                                                                old-val)]
+                            (deplete-lu-for-entry lu 
+                                                  ixr-k 
+                                                  k 
+                                                  depleted-lu-keys))
+                 ;; no removal needed
+                          lu)]
+        (recur (add-lu-entries lu 
+                               ixr-k 
+                               (make-lu-entries (ixr-fn k v) k))
+               rest-ixr)))))
 
 
 (defn remove-map-entry 
@@ -260,9 +262,14 @@
 
 (defn ixrs&default [imap]
   (->> (.indexers imap)
-       ((fn [ixrs] [ixrs, (if-let [default-ixr (:default ixrs)]
-                            [:default default-ixr]
-                              (first ixrs))]))))
+       ((fn [ixrs] [ixrs, (if-let [dixr (:default ixrs)]
+                            (if (fn? dixr)
+                              [:default dixr]
+                              [dixr (dixr ixrs)])
+                            (first ixrs))]))))
+;;(if-let [default-ixr (:default ixrs)]
+;;                            [:default default-ixr]
+;;                              (first ixrs))]))))
 
 (defn query-as-seq [imap ixr-k rkeys]
   (map #(get-in (.lu imap)
