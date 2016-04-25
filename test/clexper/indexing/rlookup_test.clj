@@ -4,14 +4,15 @@
                      make-imap] :as sut]
             [clojure.test :refer :all]))
 
+(def foobars {:foo {:a 1, :b 2}, :bar {:a 2, :c 4}, :baz {:b 3, :c 5}})
+(def foobars-ixr (fn f 
+                   ([_ v] (->> (set (keys v))))
+                   ([v] (f nil v))))
+
 (deftest single-index-test
-  (let [m {:foo {:a 1, :b 2}, :bar {:a 2, :c 4}, :baz {:b 3, :c 5}}
-        ixr (fn f 
-              ([_ v] (->> (set (keys v))))
-              ([v] (f nil v)))
-        imap (make-imap m {:default  ixr})]
+  (let [ imap (make-imap foobars {:default foobars-ixr})]
     (testing "imap creation and fields"
-      (is (= m (.m imap)))
+      (is (= foobars (.m imap)))
       (is (= {:default {:a #{:foo :bar}
                         :b #{:foo :baz}
                         :c #{:bar :baz}}} 
@@ -148,3 +149,31 @@
         :by-address&phone [["f&m-a" "111-2222"]] :aggregate #{1 2},
         :by-name&address&phone [["Bobby" "bsa" "444-4444"] ["Pat" "psa" "333-3333"]] :seq
          '(#{4} #{3})))))
+
+
+(defn updates-map [from-actual expected]
+  (println "ACTUAL extract:" from-actual)
+  (->> expected
+       (map (fn [[k v]] [k (get from-actual k)]))
+       (into {})))
+
+(deftest updates-test
+  (let [imap (make-imap foobars {:default foobars-ixr})]
+    (testing "assoc'ing an imap entry yields a new imap with an updated map/lookup"
+      (are [k v exp-updates]
+          (let [im (assoc imap k v)]
+            (is (= v (get im k)))
+            (is (= exp-updates (updates-map (:default (.lu im)) exp-updates)))) 
+        :boo {:a 3 :x 1} {:a #{:foo :bar :boo} :x #{:boo}}
+        :baz {:b 3, :d 1} {:b #{:foo :baz} :d #{:baz}} 
+        :baz {:b 4, :d 1} {:b #{:foo :baz} :d #{:baz}}))
+
+    (testing "dissoc'ing an imap entry yields a new imap with an updated map/lookup"
+      (are [k  exp-updates]
+          (let [im (dissoc imap k)]
+            (is (= nil (get im k)))
+            (is (= exp-updates (updates-map (:default (.lu im)) exp-updates)))) 
+        
+        :baz {:b #{:foo} :c #{:bar}}
+
+))))
