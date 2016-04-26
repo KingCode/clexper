@@ -152,7 +152,6 @@
 
 
 (defn updates-map [from-actual expected]
-  (println "ACTUAL extract:" from-actual)
   (->> expected
        (map (fn [[k v]] [k (get from-actual k)]))
        (into {})))

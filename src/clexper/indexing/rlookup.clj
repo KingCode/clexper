@@ -27,7 +27,7 @@
     "Yields a set of all main map keys from lookup keys ks 
      for index keyed under ixr-k."))
 
-(declare query update-imap ixrs&default)
+(declare query update-imap ixrs&default complete-assoc complete-dissoc)
 
 (deftype IndexedMap [m lu indexers qformat]
 
@@ -69,12 +69,12 @@
 
    clojure.lang.IPersistentMap
   (assoc [this k v]
-    (update-imap this (.assoc m k v) k v))
+    (complete-assoc this (.assoc m k v) k v))
   (assocEx [this k v] 
-    (update-imap this (.assocEx m k v) k v))
+    (complete-assoc this (.assocEx m k v) k v))
   
   (without [this k] 
-    (update-imap this (.without m k) k))
+    (complete-dissoc this (.without m k) k (get m k)))
 
   ;; boilerplate delegation to the main map
   java.lang.Iterable
@@ -140,7 +140,7 @@
   (loop [lu lu [[k v] & rest-kvs] (seq kvs)]
     (if-not k
       lu
-      (let [next-lu (if-let [keyset (get-in lu idx k)] 
+      (let [next-lu (if-let [keyset (get-in lu [idx k])] 
                       (if (keyset v)
                         (assoc-in lu [idx k] 
                                   (set/difference keyset #{v}))
@@ -149,9 +149,9 @@
 
 
 (defn deplete-lu-for-entry 
-" Removes k (a main map key) from the keyset value 
-  from reverse lookup entries keyed by one of depleted-lu-keys.
-
+" Removes k (a main map key) from the keyset value from
+  reverse lookup entries keyed by one of depleted-lu-keys
+  in lookup lu's index keyed by idx.
   Yields the new reverse lookup.
 "
 [lu idx k depleted-lu-keys]
@@ -241,22 +241,31 @@
  (make-imap m indexers :aggregate)))
 
 
+(defn- complete-assoc [imap new-m k v]
+  (update-imap imap new-m k v :put))
+
+
+(defn- complete-dissoc [imap new-m k v]
+  (update-imap imap new-m k v :remove))
+
+
 (defn update-imap
 "Yields a new IndexedMap from imap using m for its main map
  and a new reverse lookup resulting from applying the change.
  If v is provided a new entry [k v] is added, otherwise 
  the entry for k is removed.
 "
-[imap m k & [v]]
-  (let [op (if v 
-             add-map-entry 
-             remove-map-entry)]
-    (->IndexedMap m
-                  (op (.lu imap) 
-                      (seq (.indexers imap)) 
-                      k v)
-                  (.indexers imap)
-                  (.qformat imap))))
+[imap m k v op]
+(let [op (case op
+           :put add-map-entry
+           :remove remove-map-entry)]
+      (->IndexedMap m
+                    (op (.lu imap) 
+                        (seq (.indexers imap)) 
+                        k v)
+                    (.indexers imap)
+                    (.qformat imap))))
+
 
 (defn ixrs&default [imap]
   (->> (.indexers imap)
