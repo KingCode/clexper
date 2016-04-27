@@ -274,26 +274,18 @@
                               [:default dixr]
                               [dixr (dixr ixrs)])
                             (first ixrs))]))))
-;;(if-let [default-ixr (:default ixrs)]
-;;                            [:default default-ixr]
-;;                              (first ixrs))]))))
-
-(defn query-as-seq [imap ixr-k rkeys]
-  (map #(get-in (.lu imap)
-                     [ixr-k %]) 
-            rkeys))
 
 
 (defn query 
   ([imap ixr-k rkeys fmt]
-   (let [op (case fmt
-              :aggregate #(reduce into #{} %)
-              :seq identity
-              :map #(zipmap rkeys %)
-              (ex-info "query format not recognized or provided" 
-                       {:ixr-k ixr-k
-                        :rkeys rkeys
-                        :format fmt}))] 
-     (op (query-as-seq imap ixr-k rkeys))))
+   (let [sub-lu (select-keys (ixr-k (.lu imap)) rkeys)]
+     (case fmt
+       :aggregate (apply set/union (vals sub-lu))
+       :seq (map #(get sub-lu %) rkeys)
+       :map sub-lu
+       (ex-info "query format not recognized or provided" 
+                {:ixr-k ixr-k
+                 :rkeys rkeys
+                 :format fmt}))))
   ([imap ixr-k rkeys]
    (query imap ixr-k rkeys (.qformat imap))))
