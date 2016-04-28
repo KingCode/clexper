@@ -10,7 +10,7 @@ The first module, clexper.indexing.rlookup defines the IReverseLookup protocol a
 An indexed maps is a regular map with a capability to look itself up based on functions of its values (indexers). Being regular maps, indexed maps are persistent. However all their updates (assoc/dissoc etc) yield a new indexed map with indexes consistent with the update. 
 
 ## Usage
-
+```
 ;; the map to be indexed
 (def phonebook  {1 {:name "Fred",        
                     :sin 11              
@@ -66,7 +66,7 @@ An indexed maps is a regular map with a capability to look itself up based on fu
 (lu/lookup phonedir ["111-2222"]) 
 
 ;;=> #{1 2}
-
+```
 ## License
 
 Copyright © 2016 FIXME
