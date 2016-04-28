@@ -31,6 +31,8 @@ An indexed maps is a regular map with a capability to look itself up based on fu
 
 ;;A few indexers in a map, each ixr must have 2- and 1-arities, 2-arities is used to build 
 ;; an index, and the other a lookup convenience.
+;; The 2-arities is required for those (admittedly rare) cases where a function may decide 
+;; to e.g. skip (not index) values for some keys or take some other key-specific action.
 
 (def indexers {:by-phone (fn phone ([_ v] #{(:phone v)}) ([v] (phone nil v)))
                :by-sin (fn sin ([_ v] #{(:sin v)}) ([v] (sin nil v)))
