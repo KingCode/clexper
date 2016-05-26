@@ -1,35 +1,42 @@
 (ns clexper.kpath)
 
-#_(deftype SetSubpathFn [s]
-  clojure.lang.IFn
-  (invoke [_ k] (s k)))
 (declare key-paths)
+
+
+(defn subpaths [k v prefix]               
+  (let [subp (key-paths v)]
+    (if (seq subp)
+      (->> subp
+           (mapv #(apply conj prefix k %)))
+      (conj prefix k))))
+
+(defn unwrap [paths]
+  (reduce (fn [ps p]
+            (into ps p))
+          [] 
+          paths))
+
 
 (defn paths-with-indexes [c prefix]
   (->> c
        (mapv (fn [i e]
-               (let [subp (key-paths e)]
-                 (if (seq subp)
-                   (->> subp
-                        (mapv #(apply conj prefix i %)))
-                   (conj prefix i))))
+               (subpaths i e prefix))
              (range))
-       (reduce (fn [ps p]
-                 (if (< 1 (count p))
-                   ;;hoist composite paths onto top level                  
-                   (into ps p) 
-                   (conj ps p)))
-               [])))
+       unwrap))
   
+
 (defn paths-with-keys [c prefix]
-  (mapv (fn [[k v]] 
-          (apply conj prefix k (key-paths v)))
-        c))
+  (->> c
+       (mapv (fn [[k v]] 
+               (subpaths k v prefix)))
+       unwrap))
   
 
 (defn paths-with-values [c prefix]
-  (mapv (fn [v]
-          (apply conj prefix v (key-paths v)))))
+  (->> c 
+       (mapv (fn [v]
+               (subpaths v v prefix)))
+       unwrap))
 
 (comment
 "Given any collection instance, we want to extract its navigational structure,
@@ -85,7 +92,10 @@
    (key-paths c [])))
 
 (defmethod key-paths nil
-  ([c prefix] prefix)
+  ([c prefix] 
+   ;; c is a leaf node: wrap it 
+   ;; for easier handling by #'unwrap
+   [prefix])
   ([c] []))
 
   
