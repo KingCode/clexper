@@ -12,7 +12,9 @@
 
 (defn unwrap [paths]
   (reduce (fn [ps p]
-            (into ps p))
+            (if (< 1 (count p))
+              (into ps p)
+              (conj ps p)))
           [] 
           paths))
 
@@ -92,10 +94,7 @@
    (key-paths c [])))
 
 (defmethod key-paths nil
-  ([c prefix] 
-   ;; c is a leaf node: wrap it 
-   ;; for easier handling by #'unwrap
-   [prefix])
+  ([c prefix] prefix)
   ([c] []))
 
   
