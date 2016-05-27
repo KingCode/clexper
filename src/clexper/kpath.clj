@@ -2,21 +2,32 @@
 
 (declare key-paths)
 
+(defn show-unwrap [all paths p] 
+  (println (str "UNWRAP (ALL=" all ", PATHS=" paths ", P=" p)))
+
+(defn show-subpaths [k v prefix kps] 
+  (println (str "SUBPATHs (" "K=" k ", V=" v ", PFX=" prefix "\n\tKPATHS for v=" kps)))
 
 (defn subpaths [k v prefix]               
   (let [subp (key-paths v)]
+    #_(show-subpaths k v prefix subp)
     (if (seq subp)
       (->> subp
            (mapv #(apply conj prefix k %)))
       (conj prefix k))))
 
 (defn unwrap [paths]
-  (reduce (fn [ps p]
-            (if (< 1 (count p))
-              (into ps p)
-              (conj ps p)))
-          [] 
-          paths))
+  (let [raw
+    (reduce 
+     (fn [ps p]
+       #_(show-unwrap paths ps p)
+       (into ps p))
+     [] 
+     paths)]
+    (mapv (fn [p]
+            (if-not (coll? p) 
+              [p]
+              p)) raw)))
 
 
 (defn paths-with-indexes [c prefix]
