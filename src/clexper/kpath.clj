@@ -53,16 +53,6 @@
                (subpaths v v prefix)))
        unwrap))
 
-(comment
-"Given any collection instance, we want to extract its navigational structure,
- i.e. all key sequences leading to a leaf node in post-order sequence.
-
- For example, 
-        (key-paths '(1 {:a [2 3 {4 :four}] :b nil} #{\\A {:c :whathever}}))
- should yield:
-       ;;=> ([0] [1 :a 0} [1 :a 1] [1 :a 2] [1 :a 2 4] [1 :b] [2])
-
-")
 
 (defmulti key-paths (fn dispatch 
                       ([c _] (dispatch c))

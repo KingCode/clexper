@@ -3,6 +3,34 @@
 Experiments in Clojure for learning purposes, with a view to promoting modules to something usable perhaps
 in their own projects.
 
+## Key Paths: path exploration of composite structures 
+
+The latest module, clexper.kpaths, provides navigation exploration functionality on arbitrarily nested data. 
+
+Specifically, given any collection instance, we want to extract its navigational structure, i.e. all key sequences leading to a leaf node - an atomic value. These key sequences could then be used by 'nth, 'get-in and the likes, to retrieve leaf nodes, or prefixes thereof for sub structures instead.
+
+For example, 
+```
+        (key-paths [:a :b :c])
+        ;;=> [[0] [1] [2]]
+        
+        (key-paths [:a [:b :c] [:d [:e]]])
+        ;;=> [[0] [1 0] [1 1] [2 0] [2 1 0]]
+```
+And on maps and sets, and mixed types (ordering may differ in result paths):
+
+```    
+       (key-paths {:a {:b {:c {:d "abcd"}}} :f "f"})
+       ;;=>[[:a :b :c :d] [:f]] 
+       
+       (key-paths #{1 2 #{3 4}})
+       ;;=> [[#{4 3} 4] [#{4 3} 3] [1] [2]]
+
+       (key-paths '(1 {:a [2 3 {4 :four}] :b nil} #{\\A {:c :whathever}}))
+       ;;=> [[0] [1 :a 0] [1 :a 1] [1 :a 2 4] [1 :b] [2 {:c :whathever} :c] [2 \A]]
+```
+
+
 ## IndexedMap: maps with fast reverse lookup retrieval
 
 The first module, clexper.indexing.rlookup defines the IReverseLookup protocol and extends it to regular clojure maps by wrapping a map into the IndexedMap data type.
