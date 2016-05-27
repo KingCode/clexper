@@ -54,15 +54,17 @@
        unwrap))
 
 
-(defmulti key-paths (fn dispatch 
-                      ([c _] (dispatch c))
-                      ([c] 
-                       (cond (seq? c) :seq
-                             (map? c) :map
-                             (associative? c) :associative
-                             (sequential? c) :sequential
-                             (set? c) :set
-                             :else nil))))
+(defn coll-category-dispatch 
+  ([c _] (coll-category-dispatch c))
+  ([c] 
+   (cond (seq? c) :seq
+         (map? c) :map
+         (associative? c) :associative
+         (sequential? c) :sequential
+         (set? c) :set
+         :else nil)))
+
+(defmulti key-paths coll-category-dispatch)
 
 
 (defmethod key-paths :seq
@@ -101,3 +103,48 @@
   ([c] []))
 
   
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;  Retrieving values from key paths           ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(declare get-at)
+
+(defn get-with-indexes [c [i & is]]
+  (let [v (nth c i)]
+    (if-not (seq is)
+      v
+      (get-at v is))))
+
+(defn get-with-keys [c [k & ks]]
+  (let [v (get c k)]
+    (if-not (seq ks)
+      v
+      (get-at v ks))))
+
+
+(defmulti get-at coll-category-dispatch)
+
+(defmethod get-at :seq
+  [c ks]
+  (get-with-indexes c ks))
+
+(defmethod get-at :map
+  [c ks]
+  (get-with-keys c ks))
+
+(defmethod get-at :associative
+  [c ks]
+  (get-with-keys c ks))
+
+(defmethod get-at :sequential
+  [c ks]
+  (get-with-indexes c ks))        
+
+(defmethod get-at :set
+  [c ks]
+  (get-with-keys c ks))
+
+
+(defmethod get-at nil
+  [c ks]
+  (throw (ex-info "Not a collection, or recognized as such" {:coll c :key-path ks})))
