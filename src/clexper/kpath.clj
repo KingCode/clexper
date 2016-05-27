@@ -17,17 +17,19 @@
       (conj prefix k))))
 
 (defn unwrap [paths]
-  (let [raw
-    (reduce 
-     (fn [ps p]
-       #_(show-unwrap paths ps p)
-       (into ps p))
-     [] 
-     paths)]
+  (let [raw (reduce 
+             (fn [ps p]
+               #_(show-unwrap paths ps p)
+               (into ps p))
+             [] 
+             paths)]
+    ;;Wrap back 'naked' singleton (top-level) paths
+    ;;for uniformity
     (mapv (fn [p]
             (if-not (coll? p) 
               [p]
-              p)) raw)))
+              p)) 
+          raw)))
 
 
 (defn paths-with-indexes [c prefix]
