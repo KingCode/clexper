@@ -13,40 +13,30 @@
     (if (seq subp)
       (->> subp
            (mapv #(apply conj prefix k %)))
-      (conj prefix k))))
+      (conj prefix [k]))))
 
-(defn unwrap [paths]
-  (reduce 
-   (fn [ps p]
-     ;;Wrap back 'naked' singleton (top-level) paths
-     ;;for uniformity
-     (if-not (coll? (first p))
-       (conj ps p)
-       (into ps p)))
-   [] 
-   paths))
-
+(defn unpack [packed-paths]
+  (reduce #(into % %2) [] packed-paths))
 
 (defn paths-with-indexes [c prefix]
   (->> c
        (mapv (fn [i e]
                (subpaths i e prefix))
              (range))
-       unwrap))
-  
+       unpack))
 
 (defn paths-with-keys [c prefix]
   (->> c
        (mapv (fn [[k v]] 
                (subpaths k v prefix)))
-       unwrap))
+       unpack))
   
 
 (defn paths-with-values [c prefix]
   (->> c 
        (mapv (fn [v]
                (subpaths v v prefix)))
-       unwrap))
+       unpack))
 
 
 (defn coll-category-dispatch 
