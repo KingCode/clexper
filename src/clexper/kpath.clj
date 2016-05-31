@@ -10,26 +10,21 @@
 
 (defn subpaths [k v prefix]               
   (let [subp (key-paths v)]
-    #_(show-subpaths k v prefix subp)
     (if (seq subp)
       (->> subp
            (mapv #(apply conj prefix k %)))
       (conj prefix k))))
 
 (defn unwrap [paths]
-  (let [raw (reduce 
-             (fn [ps p]
-               #_(show-unwrap paths ps p)
-               (into ps p))
-             [] 
-             paths)]
-    ;;Wrap back 'naked' singleton (top-level) paths
-    ;;for uniformity
-    (mapv (fn [p]
-            (if-not (coll? p) 
-              [p]
-              p)) 
-          raw)))
+  (reduce 
+   (fn [ps p]
+     ;;Wrap back 'naked' singleton (top-level) paths
+     ;;for uniformity
+     (if-not (coll? (first p))
+       (conj ps p)
+       (into ps p)))
+   [] 
+   paths))
 
 
 (defn paths-with-indexes [c prefix]
