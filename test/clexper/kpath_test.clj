@@ -1,11 +1,11 @@
 (ns clexper.kpath-test
-  (:require [clexper.kpath :as sut :refer [key-paths]]
+  (:require [clexper.kpath :as sut :refer [paths]]
             [clojure.test :as t :refer [deftest testing is are]]))
 
 
 
 (deftest sequential-test
-  (are [x y] (= x (key-paths y))
+  (are [x y] (= x (paths y))
     [[0] [1] [2]] [:a :b :c]
     [[0] [1 0]] [:a [:b]]
     [[0] [1 0] [1 1]] [:a [:b :c]]
@@ -17,7 +17,7 @@
 
 
 (deftest map-test
-  (are [x y] (= (set x) (set (key-paths y)))
+  (are [x y] (= (set x) (set (paths y)))
     [[:a] [:b] [:c]] {:a "a" :b "b" :c "c"}  
     [[:a :b]] {:a {:b "ab"}}
     [[:a :b :c :d]] {:a {:b {:c {:d "abcd"}}}}
