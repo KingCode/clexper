@@ -77,40 +77,41 @@
         (apply conj prefix k subpath)
     nil))
 
-(defn some-path-impl [c prefix indexer-fn search]
-  (let [find (comp indexer-fn 
-                   (keep (fn [[idx v]]
-                             (some-subpath idx v prefix search))))]
-    (first (transduce find conj c))))
+(defmacro make-finder [& [indexer-fn]]
+  (let [suffix-form `(keep (fn [[idx# v#]]
+                             (some-subpath idx# v# ~'prefix ~'search)))]
+        (if indexer-fn
+          `(comp ~indexer-fn ~suffix-form)
+          suffix-form)))
+
+
+(defn some-path-impl [c prefix finder search]
+    (first (transduce finder conj c)))
         
 (defn some-path-using-indexes 
   ([c prefix search]
    (let [counter (atom -1)] 
      (some-path-impl c, prefix, 
-                     (map (fn [v]
-                            [(swap! counter inc), v])), 
+                     (make-finder (map (fn [v]
+                               [(swap! counter inc), v]))), 
                      search)))
   ([c search]
    (some-path-using-indexes c [] search)))
 
 (defn some-path-using-keys 
   ([c prefix search]
-   (some-path-impl c prefix identity search))
+   (some-path-impl c prefix (make-finder) search))
   ([c search]
    (some-path-using-keys c [] search)))
 
 (defn some-path-using-values
   ([c prefix search]
    (some-path-impl c, prefix,
-                   (map (fn [v] [v,v])),
+                   (make-finder (map (fn [v] [v,v]))),
                    search))
   ([c search]
    (some-path-using-values c [] search)))
 
-
-(defn some-path-using-nothing
-  ([c prefix search]
-   (when (= c search) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;  Public API
