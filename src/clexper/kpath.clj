@@ -155,4 +155,12 @@
     ([this prefix] prefix)
     ([this] []))
   (get-at [this path] 
-    (throw (ex-info "Not a collection, or recognized as such" {:coll this :path path}))))
+    (throw (ex-info "#'get-at expected a collection, but found an atomic value" {:coll this :path path}))))
+(extend-type nil
+  PathFinder
+  (somep [_ search] (when (nil? search) ()))
+  (paths 
+    ([this prefix] prefix)
+    ([this] []))
+  (get-at [_ path]
+    (throw (ex-info "get-at expected a collection, but found nil" {:coll nil :path path}))))
