@@ -71,8 +71,8 @@
 
 (declare somep)
 
-(defn some-subpath [k v prefix pred]               
-  (if-let [subpath (or (when (pred v) ()) 
+(defn some-subpath [k v prefix pred]
+  (if-let [subpath (or (when (pred v) ())
                        (somep v pred))]
         (apply conj prefix k subpath)
     nil))
@@ -84,16 +84,24 @@
           `(comp ~indexer-fn ~suffix-form)
           suffix-form)))
 
-
 (defn some-path-impl [c prefix finder pred]
     (first (transduce finder conj c)))
         
 (defn some-path-using-indexes 
   ([c prefix pred]
+   #_(loop [i 0 [head & tail] c]
+     (cond 
+       (and head (pred head)) (conj prefix i)
+       (coll?  head) (if-let [subp (somep head pred)]
+                       (into prefix (cons i subp))
+                       (recur (inc i) tail))
+       head (recur (inc i) tail)
+       :else nil))
    (let [counter (atom -1)] 
      (some-path-impl c, prefix, 
-                     (make-finder (map (fn [v]
-                               [(swap! counter inc), v]))), 
+                     (make-finder 
+                      (map (fn [v]
+                             [(swap! counter inc), v]))), 
                      pred)))
   ([c pred]
    (some-path-using-indexes c [] pred)))
@@ -169,7 +177,8 @@
     ([this prefix] prefix)
     ([this] []))
   (get-at [this path] 
-    (throw (ex-info "#'get-at expected a collection, but found an atomic value" {:coll this :path path}))))
+    nil
+    #_(throw (ex-info "#'get-at expected a collection, but found an atomic value" {:coll this :path path}))))
 (extend-type nil
   PathFinder
   (somep [_ pred] (when (pred nil) ()))
@@ -178,4 +187,5 @@
     ([this prefix] prefix)
     ([this] []))
   (get-at [_ path]
-    (throw (ex-info "get-at expected a collection, but found nil" {:coll nil :path path}))))
+    nil
+    #_(throw (ex-info "get-at expected a collection, but found nil" {:coll nil :path path}))))
