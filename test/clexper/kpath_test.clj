@@ -1,7 +1,10 @@
 (ns clexper.kpath-test
   (:require [clexper.kpath :as sut :refer [paths]]
-            [clojure.test :as t :refer [deftest testing is are]]))
-
+            [clojure.test :as t :refer [deftest testing is are]]
+            [clojure.test.check :as tc]
+            [clojure.test.check.clojure-test :refer [defspec]]
+            [clojure.test.check.generators :as gen]
+            [clojure.test.check.properties :as prop]))
 
 
 (deftest paths-sequential-test
@@ -41,5 +44,11 @@
      [:a 2 0]
      [:a 2 1]] 
 ;; actual    
-    {:a [:b #{1 {:c [:d :e]}} [:f :g]]}
-))
+    {:a [:b #{1 {:c [:d :e]}} [:f :g]]}))
+
+
+#_(defspec first-element-is-min-after-sorting ;; the name of the test
+         100 ;; the number of iterations for test.check to test
+         (prop/for-all [v (gen/not-empty (gen/vector gen/int))]
+           (= (apply min v)
+              (first (sort v)))))
