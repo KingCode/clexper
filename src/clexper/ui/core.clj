@@ -12,5 +12,5 @@
 
 (defn get-commands 
 "Retrieves n commands "
-[^Menu menu, n]
+[^Menu menu, n])
 
