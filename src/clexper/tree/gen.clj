@@ -75,10 +75,12 @@
 (defn splits 
 "Generates all possible n-way splits (default 2) of coll as vectors"
   ([coll n]
-   (->> (combo/combinations (range 1 (count coll))
-                            (dec n))
-        (mapv (fn [i]
-                (splitv-at i coll)))))
+   (if (<= (count coll) n)
+     [coll]
+     (->> (combo/combinations (range 1 (count coll))
+                              (dec n))
+          (mapv (fn [i]
+                  (splitv-at i coll))))))
   ([coll]
    (splits coll 2)))
 
@@ -169,11 +171,18 @@
  with coll elements as leaves having in-order traversal 
  the same as ordering in coll"
   ([coll n]
-   (let [leafy (as-leafy coll)]
-     (-> leafy
-         (map-splits n)
-         (#(singleton leafy %))
-          map->trees)))
+   (cond 
+     (< 1 n)
+     (let [leafy (as-leafy coll)]
+       (-> leafy
+           (map-splits n)
+           (#(singleton leafy %))
+           map->trees))
+     (= 1 n)
+     (list coll)
+     
+     :else
+     (throw (ex-info "Can't split into less than one branch" {:n-arg n}))))
   ([coll]
    (gen-trees coll 2)))
 
@@ -196,3 +205,19 @@
   (def abcdef-t (gen-trees (restore-leaves abcdef)))
   (def abcdef-3m (map-splits abcdef 3))
   (def abcdef-3t (gen-trees (restore-leaves abcdef) 3)))
+(defn leaf-groupings [coll n]
+  (println coll)
+  (if (and (leafy? coll) 
+           (<= (count coll) n))
+    coll
+    (let [splits (splits coll n)]
+      (mapv #(leaf-groupings % n) splits))))
+
+(defn deleaf [coll]
+  (if (leafy? coll)
+    (mapv :value coll)
+    (mapv deleaf coll)))
+
+(defn groupings [coll n]
+  (let [groups (leaf-groupings (as-leafy coll) n)]
+    (deleaf groups)))
