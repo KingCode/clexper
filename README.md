@@ -2,7 +2,7 @@
 
 Experiments in Clojure for learning purposes, with a view to promoting modules to something usable perhaps
 in their own projects.
-## N-Tree generation: mapping a collection to its pre-order N-tuple associated elements
+## N-branching tree generation: mapping a collection to its pre-order N-tuple associated elements
 
 The latest namespace is clexper.tree.gen and has a simple/specific API: 
 (gen-trees [:a :b :c :d]) ;; generates tuples
