@@ -1,21 +1,90 @@
-(ns clexper.tree.trie)
+(ns clexper.tree.trie
+  (:require [clojure.zip :as zip]
+            [clojure.string :as str]
+            [clexper.render.console.hierarchy :as h]))
 
-(defprotocol NodeOps
-  (search [_ k])
-  (add [_ k f])
-  (prune [_ k f]))
+(defprotocol  
+  ;; (search [_ k])
+  (path [_]))
 
 (defrecord Node [parent label value children])
+(defrecord Trie [alphabet ^Node root index])
+
+(defmethod print-method Trie [v ^java.io.Writer w]
+  (.write w (tabify 
+             (str *ns* ".Trie[" :alphabet (.alphabet v) 
+                  ;; ", :index " (.index v)
+                  (tabs)
+                  (pr-str (.root v))
+                  "]"))))
+
+(def ^:dynamic ^:private *tabs* -1)
+(def tabsiz 2)
+(def space " ")
+
+(defmacro tabify [ & body]
+  `(binding [*tabs* (inc *tabs*)]
+     ~@body))
+
+(defn tabs 
+  ([n]
+   (apply str 
+          (repeat (* n tabsiz) space)))
+  ([]
+   (tabs *tabs*)))
+
+(defn tabs+ []
+  (tabs (inc *tabs*)))
+
+
+(defn node-mark [^Node node word-pred]
+  (when node
+    (str (.label node)
+         (when (word-pred node)
+           "*"))))
+
+
+(defmethod print-method Node [v ^java.io.Writer w]
+  (let [path (-> (loop [path () ^Node x v] 
+                    (if (nil? x) 
+                      path
+                      (recur (conj path (.label x)) (.parent x))))
+                 rest
+                 (conj (str *ns* ".Node[" :path " |")))]
+    (.write w (tabify 
+               (str "\n"(tabs) 
+                    (str/join "->-" path )
+                    ",:value " (or (.value v) ::nil) 
+                    (apply str (for [c (.children v)
+                                     :when c] 
+                                 (if c 
+                                   (str (pr-str c))
+                                   (str "\n"(tabs+) "^"))))
+                    ;; (tabs) "]"
+                    "]")))))
+
 
 (defn make-node [^Node parent label value children]
+
   (->Node parent label value children))
+
+(defn node-zipper [^Node root] 
+  (zip/zipper (fn [^Node node]
+                (some identity (.children node)))
+              (fn [^Node node]
+                (seq (.children node)))
+              (fn [^Node node children]
+                (make-node (.parent node)
+                           (.label node)
+                           (.value node)
+                           children))
+              root))
 
 (def NilNode (make-node nil nil nil nil))
 
 (defn empty-children [n]
   (make-array (class NilNode) n))
 
-(defrecord Trie [alphabet ^Node root index])
 
 (defn make-root [arity]
             (make-node nil nil nil (empty-children arity)))
@@ -78,6 +147,8 @@ The searched word must be valid."
   (make-node (.parent node) (.label node) WordEndMark (.children node)))
 
 (defn word? [^Node node]
+  (identity (.value node)))
+#_(defn word? [^Node node]
   (= WordEndMark (.value node)))
 ;;;;;;;;
 
@@ -127,8 +198,10 @@ The searched word must be valid."
            :let [label (.label node) 
                  ps (paths-as-nested k)]]
        (if (pred node)
-         (cons label (cons WordEndMark ps))
-         (cons label ps)))
+         (list* label WordEndMark ps)
+         (list* label ps)
+         #_(cons label (cons WordEndMark ps))
+         #_(cons label ps)))
      (pred node)
      [(.label node) WordEndMark]
      :else
@@ -137,13 +210,17 @@ The searched word must be valid."
    (paths-as-nested node word?)))
 
 
-(defn paths [^Trie trie]
-  (->> (.root trie) 
+(defn paths [^Node node]
+  "Yields all paths from 'node to its leaves, including 
+word end marks."
+  (->> node
        paths-as-nested
        flatten
        (partition-by nil?)
        (filter #(identity (first %)))))
 
+(defn all-paths [^Trie trie]
+  (paths (.root trie)))
 
 (defn expand [path]
   (first 
@@ -169,10 +246,23 @@ The searched word must be valid."
 (defn expand-all [paths]
   (mapcat #(expand %) paths))
 
+(defn narrow [pfx-paths ^Node branch x]
+  (->> pfx-paths
+         (filter #(= x (last %))))
+  )
+
+
 (defn make-ht []
-  (let [ht (empty-trie "helo")]
+  (let [ht (empty-trie "heloi")]
     (add-word ht (seq "eel"))
     (add-word ht (seq "hello"))
     (add-word ht (seq "hell"))
     (add-word ht (seq "he"))
-    ht))
+    (add-word ht (seq "hi"))
+    ;; (add-word ht (seq "ho"))
+    ;; (add-word ht (seq "lie"))
+    ;; (add-word ht (seq "heel"))
+    ;; (add-word ht (seq "lee"))
+    ht)
+  )
+
