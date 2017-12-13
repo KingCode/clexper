@@ -3,24 +3,27 @@
             [clojure.string :as str]
             [clexper.render.console.hierarchy :as h]))
 
-(defprotocol  
-  ;; (search [_ k])
-  (path [_]))
+(defprotocol TrieOps  
+  (search [_ path])
+  (add [_ word]))
 
 (defrecord Node [parent label value children])
 (defrecord Trie [alphabet ^Node root index])
 
-(defmethod print-method Trie [v ^java.io.Writer w]
-  (.write w (tabify 
-             (str *ns* ".Trie[" :alphabet (.alphabet v) 
-                  ;; ", :index " (.index v)
-                  (tabs)
-                  (pr-str (.root v))
-                  "]"))))
+(defn path 
+  ([^Node node p]
+   (if node
+     (recur (.parent node) (conj p (.label node)))
+     p))
+  ([^Node node]
+   (path node nil)))
 
+;;;;; pretty-printing utils
+;;;;;;;;;;;;;;;;;;
 (def ^:dynamic ^:private *tabs* -1)
 (def tabsiz 2)
 (def space " ")
+(def ^:dynamic *show-orphans* false)
 
 (defmacro tabify [ & body]
   `(binding [*tabs* (inc *tabs*)]
@@ -56,13 +59,20 @@
                     (str/join "->-" path )
                     ",:value " (or (.value v) ::nil) 
                     (apply str (for [c (.children v)
-                                     :when c] 
+                                     :when (or c *show-orphans*)] 
                                  (if c 
                                    (str (pr-str c))
                                    (str "\n"(tabs+) "^"))))
                     ;; (tabs) "]"
                     "]")))))
 
+(defmethod print-method Trie [v ^java.io.Writer w]
+  (.write w (tabify 
+             (str *ns* ".Trie[" :alphabet (.alphabet v) 
+                  ;; ", :index " (.index v)
+                  (tabs)
+                  (pr-str (.root v))
+                  "]"))))
 
 (defn make-node [^Node parent label value children]
 
@@ -141,15 +151,16 @@ The searched word must be valid."
 ;;
 ;; Utilities for using the trie to store words only (the default) 
 ;;
-(def WordEndMark ::word)
 
 (defn mark-word [^Node node]
-  (make-node (.parent node) (.label node) WordEndMark (.children node)))
+  (make-node (.parent node) (.label node) ::word (.children node)))
 
 (defn word? [^Node node]
   (identity (.value node)))
-#_(defn word? [^Node node]
-  (= WordEndMark (.value node)))
+(defn marked-as-word? [^Node node]
+  (= ::word (.value node)))
+(defn word-mark? [x]
+  (= ::word x))
 ;;;;;;;;
 
 
@@ -187,69 +198,105 @@ The searched word must be valid."
    (add-word trie word mark-word)))
 
 
-(defn paths-as-nested 
-  ([^Node node pred]
-   (cond 
-     (nil? node)
-     nil
-     (some identity (.children node))
-     (for [k (.children node) 
-           :when (not (nil? k)) 
-           :let [label (.label node) 
-                 ps (paths-as-nested k)]]
-       (if (pred node)
-         (list* label WordEndMark ps)
-         (list* label ps)
-         #_(cons label (cons WordEndMark ps))
-         #_(cons label ps)))
-     (pred node)
-     [(.label node) WordEndMark]
-     :else
-     [(.label node)]))
-  ([^Node node]
-   (paths-as-nested node word?)))
+
+#_(defn choice-fn [{:keys [index]} word-pred]
+  (letfn 
+      [(paths [^Node node path]
+         (if (word-pred node)
+           (conj path (.label node)))
+         (for [c (.children from) :when c]
+           (words (.label c))))
+       (words [x ^Node from path]
+         (cond 
+           (nil? x)
+           [path]
+           (nil? from)
+           nil
+           :else 
+           (if-let [child (select-child from index x)]
+             
+             )
+           )
+         )]) 
+;; h  TRIE [] 
+;;   [he hi heel hello]
+;; e  node-1 [h]
+;;   [he heel hell hello] [he]
+;; l node-2 [he]
+;;   [hell hello] [hel]
+  
+               
+ )
+
+(defn branch? [^Node node]
+  (some identity (.children node)))
+
+
+(defn paths-from [^Node node]
+  (cond 
+    (nil? node)
+    []
+    (branch? node)
+    (for [k (.children node)
+          :when k]
+      (map (partial list* 
+                     (if (word? node) 
+                       [(.label node) ::branching-word]
+                       (.label node)))
+           (paths-from k)))
+    :else
+    [[(.label node) ::word]]))
+
+
+(defn aggregate [wordline]
+                     (reduce (fn [[w & ws :as words] x]
+                               (if (= ::branching-word x)
+                                 (cons w words)
+                                 (cons (conj w x) ws)))
+                             [[]]
+                             wordline))
 
 
 (defn paths [^Node node]
   "Yields all paths from 'node to its leaves, including 
 word end marks."
-  (->> node
-       paths-as-nested
-       flatten
-       (partition-by nil?)
-       (filter #(identity (first %)))))
+  (let [part-fn #(or (nil? %)
+                     (word-mark? %))]
+    (->> node
+         paths-from
+         flatten
+         (partition-by part-fn)
+         (remove (comp part-fn first))
+         (map aggregate)
+         (apply concat)
+         set)))
 
 (defn all-paths [^Trie trie]
   (paths (.root trie)))
 
-(defn expand [path]
-  (first 
-   (reduce (fn [[words add-word?] x]
-             #_(println :WORDS words :ADD? add-word? :X x)
-             (cond
-               (empty? words) 
-               [[[x]], false]
-               
-               add-word? 
-               [(conj words 
-                      (conj (last words) x)), false]
 
-               (= WordEndMark x)
-               [words, true]
+(defn select-child [^Node node index x]
+  (when node
+    (aget (.children node) (index x))))
 
-               :else
-               [(conj (vec (butlast words))
-                      (conj (last words) x)), false]))
-           [[], false]
-           path)))
 
-(defn expand-all [paths]
-  (mapcat #(expand %) paths))
+(defn navigate [^Trie trie path]
+  (reduce (fn [^Node node x]
+            (select-child node (.index trie) x))
+          (.root trie)
+          path))
 
-(defn narrow [pfx-paths ^Node branch x]
-  (->> pfx-paths
-         (filter #(= x (last %))))
-  )
+
+(defn choice-fn [^Trie trie]
+  (fn [path x]
+    (->>
+     (select-child (navigate trie path)
+                   (.index trie) 
+                   x)
+     paths
+     (map (partial concat path))
+     (map (partial apply str))
+     sort)))
 
 
 (defn make-ht []
@@ -259,10 +306,10 @@ word end marks."
     (add-word ht (seq "hell"))
     (add-word ht (seq "he"))
     (add-word ht (seq "hi"))
-    ;; (add-word ht (seq "ho"))
-    ;; (add-word ht (seq "lie"))
-    ;; (add-word ht (seq "heel"))
-    ;; (add-word ht (seq "lee"))
+    (add-word ht (seq "ho"))
+    (add-word ht (seq "lie"))
+    (add-word ht (seq "heel"))
+    (add-word ht (seq "lee"))
     ht)
   )
 
