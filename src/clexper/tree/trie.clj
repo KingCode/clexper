@@ -18,8 +18,7 @@
   ([^Node node]
    (path node nil)))
 
-;;;;; pretty-printing utils
-;;;;;;;;;;;;;;;;;;
+;;;;; pretty-printing  ;;;;;; 
 (def ^:dynamic ^:private *tabs* -1)
 (def tabsiz 2)
 (def space " ")
@@ -74,11 +73,7 @@
                   (pr-str (.root v))
                   "]"))))
 
-(defn make-node [^Node parent label value children]
-
-  (->Node parent label value children))
-
-(defn node-zipper [^Node root] 
+#_(defn node-zipper [^Node root] 
   (zip/zipper (fn [^Node node]
                 (some identity (.children node)))
               (fn [^Node node]
@@ -89,6 +84,11 @@
                            (.value node)
                            children))
               root))
+
+;;;;;;;;  trie functions ;;;;;;;
+(defn make-node [^Node parent label value children]
+
+  (->Node parent label value children))
 
 (def NilNode (make-node nil nil nil nil))
 
@@ -108,8 +108,10 @@
                       alphabet)
                  (into {})))))
 
+
 (defn valid? [alphabet word]
   (every? (set alphabet) word))
+
 
 (defn validate [^Trie trie word]
   (assert (valid? (:alphabet trie) word)))
@@ -164,12 +166,6 @@ The searched word must be valid."
 ;;;;;;;;
 
 
-;;
-;; Utilities for both storing words and arbitrary values associated
-;;
-;; TODO
-
-
 (defn add-word 
   "Adds nodes so that 'word is part of the node's paths. If provided,
   xnode is a function taking a node and returning a node marked as
@@ -198,81 +194,32 @@ The searched word must be valid."
    (add-word trie word mark-word)))
 
 
-
-#_(defn choice-fn [{:keys [index]} word-pred]
-  (letfn 
-      [(paths [^Node node path]
-         (if (word-pred node)
-           (conj path (.label node)))
-         (for [c (.children from) :when c]
-           (words (.label c))))
-       (words [x ^Node from path]
-         (cond 
-           (nil? x)
-           [path]
-           (nil? from)
-           nil
-           :else 
-           (if-let [child (select-child from index x)]
-             
-             )
-           )
-         )]) 
-;; h  TRIE [] 
-;;   [he hi heel hello]
-;; e  node-1 [h]
-;;   [he heel hell hello] [he]
-;; l node-2 [he]
-;;   [hell hello] [hel]
-  
-               
- )
-
 (defn branch? [^Node node]
   (some identity (.children node)))
 
 
-(defn paths-from [^Node node]
-  (cond 
-    (nil? node)
-    []
-    (branch? node)
-    (for [k (.children node)
-          :when k]
-      (map (partial list* 
-                     (if (word? node) 
-                       [(.label node) ::branching-word]
-                       (.label node)))
-           (paths-from k)))
-    :else
-    [[(.label node) ::word]]))
+(defn paths-from
+  ([^Node node path]
+   (if (nil? node)
+     nil
+     (let [label (.label node) 
+           path (conj path label)]
+       (cond
+         (word? node)
+         (cons path 
+               (mapcat #(paths-from % path)
+                       (.children node)))
+         (branch? node)
+         (mapcat #(paths-from % path) 
+                 (.children node))
+         :else
+         [[label]]))))
+  ([^Node node]
+   (paths-from node [])))
 
-
-(defn aggregate [wordline]
-                     (reduce (fn [[w & ws :as words] x]
-                               (if (= ::branching-word x)
-                                 (cons w words)
-                                 (cons (conj w x) ws)))
-                             [[]]
-                             wordline))
-
-
-(defn paths [^Node node]
-  "Yields all paths from 'node to its leaves, including 
-word end marks."
-  (let [part-fn #(or (nil? %)
-                     (word-mark? %))]
-    (->> node
-         paths-from
-         flatten
-         (partition-by part-fn)
-         (remove (comp part-fn first))
-         (map aggregate)
-         (apply concat)
-         set)))
 
 (defn all-paths [^Trie trie]
-  (paths (.root trie)))
+  (paths-from (.root trie)))
 
 
 (defn select-child [^Node node index x]
@@ -286,17 +233,13 @@ word end marks."
           (.root trie)
           path))
 
-
 (defn choice-fn [^Trie trie]
   (fn [path x]
-    (->>
+    (->
      (select-child (navigate trie path)
-                   (.index trie) 
+                   (.index trie)
                    x)
-     paths
-     (map (partial concat path))
-     (map (partial apply str))
-     sort)))
+     (paths-from path))))
 
 
 (defn make-ht []
