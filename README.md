@@ -5,8 +5,10 @@ in their own projects.
 ## N-branching tree generation: mapping a collection to its pre-order N-tuple associated elements
 
 The latest namespace is clexper.tree.gen and has a simple/specific API: 
-(gen-trees [:a :b :c :d]) ;; generates tuples
+(gen-trees [:a :b :c]) ;; generates duples (using default 2-branching)
 ;;=>([[:a] [:b :c]] [[:a :b] [:c]])
+(gen-trees [:a :b :c :d] ;;likewise generates
+;;=> ([[:a] [[:b] [:c :d]]] [[:a] [[:b :c] [:d]]] [[:a :b] [:c :d]] [[[:a] [:b :c]] [:d]] [[[:a :b] [:c]] [:d]])
 (gen-trees [:a :b :c :d] 3) ;; generates triples
 ;;=>([[:a] [:b] [:c :d]] [[:a] [:b :c] [:d]] [[:a :b] [:c] [:d]])
 
