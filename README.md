@@ -6,10 +6,15 @@ in their own projects.
 
 The latest namespace is clexper.tree.gen and has a simple/specific API: 
 (gen-trees [:a :b :c]) ;; generates duples (using default 2-branching)
+
 ;;=>([[:a] [:b :c]] [[:a :b] [:c]])
+
 (gen-trees [:a :b :c :d] ;;likewise generates
+
 ;;=> ([[:a] [[:b] [:c :d]]] [[:a] [[:b :c] [:d]]] [[:a :b] [:c :d]] [[[:a] [:b :c]] [:d]] [[[:a :b] [:c]] [:d]])
+
 (gen-trees [:a :b :c :d] 3) ;; generates triples
+
 ;;=>([[:a] [:b] [:c :d]] [[:a] [:b :c] [:d]] [[:a :b] [:c] [:d]])
 
 That is, all possible combinations of its leaves within N-tuples (default 2), are output so that the original elements can be read in the same order as traversing any of the output trees in pre-order fashion. 
