@@ -6,7 +6,7 @@ in their own projects.
 
 The latest namespace is clexper.tree.gen and has a simple/specific API: 
 (gen-trees [:a :b :c]) ;; generates duples (using default 2-branching)
-
+```
 ;;=>([[:a] [:b :c]] [[:a :b] [:c]])
 
 (gen-trees [:a :b :c :d] ;;likewise generates
@@ -16,18 +16,21 @@ The latest namespace is clexper.tree.gen and has a simple/specific API:
 (gen-trees [:a :b :c :d] 3) ;; generates triples
 
 ;;=>([[:a] [:b] [:c :d]] [[:a] [:b :c] [:d]] [[:a :b] [:c] [:d]])
-
+```
 That is, all possible combinations of its leaves within N-tuples (default 2), are output so that the original elements can be read in the same order as traversing any of the output trees in pre-order fashion. 
 
 For example, consider the noun-noun phrases that need to be considered by an NLP processing application (from http://www.naclo.cs.cmu.edu/problems2012/N2012-RS.pdf) in the following examples:
+
 "ice cream soda":
+```
 (gen-trees [:ice :cream :soda])
 ;;=> ([[:ice] [:cream :soda]] [[:ice :cream] [:soda]])
-
+```
 "togetherness effect government study author":
+```
 (gen-trees [:togetherness :effect :government :study :author])
 ;;=>(.... [[:togetherness :effect] [[:government :study] [:author]]] ....)
-
+```
 In each case the original order remains when reading left to right. 
 ## Key Paths: path exploration of composite structures 
 
